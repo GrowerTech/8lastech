@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+:root {
+  --color-background: #0a0e17;
+  --color-background-alt: #0d1320;
+  --color-foreground: #f8fafc;
+  --color-card: #111826;
+  --color-card-hover: #151d2e;
+  --color-muted: #94a3b8;
+  --color-muted-2: #64748b;
+  --color-border: #1e293b;
+  --color-accent: #3b82f6;
+  --color-accent-2: #60a5fa;
+  --color-accent-dim: #1d4ed8;
+  --color-on-accent: #ffffff;
+  --color-destructive: #ef4444;
+
+  --font-heading: var(--font-space-grotesk), "Space Grotesk", sans-serif;
+  --font-body: var(--font-dm-sans), "DM Sans", sans-serif;
+
+  /* Driven by Hero's scroll-jack; 1 = About fully emerged. Defaults to 1 so
+     the page reads normally before JS hydrates or under reduced motion. */
+  --about-reveal: 1;
+}
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-background-alt: var(--color-background-alt);
+  --color-foreground: var(--color-foreground);
+  --color-card: var(--color-card);
+  --color-card-hover: var(--color-card-hover);
+  --color-muted: var(--color-muted);
+  --color-muted-2: var(--color-muted-2);
+  --color-border: var(--color-border);
+  --color-accent: var(--color-accent);
+  --color-accent-2: var(--color-accent-2);
+  --color-accent-dim: var(--color-accent-dim);
+  --color-on-accent: var(--color-on-accent);
+  --color-destructive: var(--color-destructive);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-2);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+a,
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+/* Gradient text used for headline emphasis */
+.text-gradient {
+  background: linear-gradient(90deg, #ffffff 0%, #93c5fd 55%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Subtle radial glow, used behind hero/section accents */
+.glow-accent {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(59, 130, 246, 0.35) 0%,
+    rgba(59, 130, 246, 0) 70%
+  );
+}
+
+/* About scales/fades in sync with --about-reveal as the hero globe dissolves,
+   so the section reads as emerging from inside it rather than just fading in. */
+.about-emerge {
+  opacity: var(--about-reveal);
+  transform: scale(calc(0.92 + var(--about-reveal) * 0.08));
+  transition: opacity 0.12s ease-out, transform 0.12s ease-out;
+  will-change: transform, opacity;
+}
+
+/* Process gallery: --progress (0-1, per connector) and --glow (0-1, per
+   card) are written from JS on scroll; the transitions here turn those
+   discrete scroll-tied updates into a smooth, eased-in glow instead of a
+   linear snap. */
+.card-glow {
+  border-color: rgb(96 165 250 / calc(0.15 + var(--glow, 0) * 0.65));
+  box-shadow:
+    0 0 calc(var(--glow, 0) * 60px) calc(var(--glow, 0) * 6px)
+      rgb(96 165 250 / calc(var(--glow, 0) * 0.35)),
+    0 0 0 1px rgb(96 165 250 / calc(var(--glow, 0) * 0.5)) inset;
+  transform: scale(calc(1 + var(--glow, 0) * 0.015));
+  transition: box-shadow 0.4s ease-out, border-color 0.4s ease-out, transform 0.4s ease-out;
+}
+
+.connector-bar {
+  width: calc(var(--progress, 0) * 100%);
+  box-shadow: 0 0 calc(var(--progress, 0) * 14px) rgb(96 165 250 / calc(var(--progress, 0) * 0.9));
+  transition: width 0.25s ease-out, box-shadow 0.25s ease-out;
+}
+
+.connector-arrow {
+  opacity: var(--progress, 0);
+  transform: translateX(calc((1 - var(--progress, 0)) * -6px));
+  filter: drop-shadow(0 0 calc(var(--progress, 0) * 10px) rgb(96 165 250 / calc(var(--progress, 0) * 0.9)));
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out, filter 0.25s ease-out;
+}
+
+.grain-overlay {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
