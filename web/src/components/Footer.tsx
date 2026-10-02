@@ -9,7 +9,16 @@ const LINKS = [
   { href: "#contact", label: "Contact" },
 ];
 
-export default function Footer() {
+type FooterSettings = { email: string; phones: string[]; whatsapp: string; copyright: string } | null;
+
+const digits = (s: string) => s.replace(/\D/g, "");
+
+export default function Footer({ settings }: { settings?: FooterSettings }) {
+  const email = settings?.email || "8lastech@gmail.com";
+  const phones = settings?.phones?.length ? settings.phones : null;
+  const phoneLabel = phones ? phones.join(" / ") : "9860658312 / 9820409071";
+  const phoneHref = phones ? `tel:+${digits(phones[0])}` : "tel:+9779860658312";
+  const waNumber = settings?.whatsapp ? digits(settings.whatsapp) : "9779860658312";
   return (
     <footer className="relative border-t border-border bg-background-alt">
       <div className="mx-auto max-w-7xl px-6 sm:px-10 py-16 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
@@ -54,25 +63,25 @@ export default function Footer() {
           <ul className="flex flex-col gap-3 text-sm">
             <li>
               <a
-                href="mailto:8lastech@gmail.com"
+                href={`mailto:${email}`}
                 className="flex items-center gap-2 text-muted hover:text-accent-2 transition-colors"
               >
                 <EnvelopeSimple size={16} />
-                8lastech@gmail.com
+                {email}
               </a>
             </li>
             <li>
               <a
-                href="tel:+9779860658312"
+                href={phoneHref}
                 className="flex items-center gap-2 text-muted hover:text-accent-2 transition-colors"
               >
                 <Phone size={16} />
-                9860658312 / 9820409071
+                {phoneLabel}
               </a>
             </li>
             <li>
               <a
-                href="https://wa.me/9779860658312"
+                href={`https://wa.me/${waNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-muted hover:text-accent-2 transition-colors"
@@ -87,7 +96,7 @@ export default function Footer() {
 
       <div className="border-t border-border py-6">
         <p className="text-center text-xs text-muted-2">
-          © {new Date().getFullYear()} 8LasTech. All rights reserved.
+          {settings?.copyright || `© ${new Date().getFullYear()} 8LasTech. All rights reserved.`}
         </p>
       </div>
     </footer>

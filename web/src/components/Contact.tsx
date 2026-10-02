@@ -21,7 +21,16 @@ type Errors = Partial<Record<keyof FormState, string>>;
 
 const CONTACT_EMAIL = "8lastech@gmail.com";
 
-export default function Contact() {
+type ContactSettings = { email: string; phones: string[]; whatsapp: string } | null;
+
+const digits = (s: string) => s.replace(/\D/g, "");
+
+export default function Contact({ settings }: { settings?: ContactSettings }) {
+  const email = settings?.email || CONTACT_EMAIL;
+  const phones = settings?.phones?.length ? settings.phones : null;
+  const phoneLabel = phones ? phones.join(" / ") : "9860658312 / 9820409071";
+  const phoneHref = phones ? `tel:+${digits(phones[0])}` : "tel:+9779860658312";
+  const waNumber = settings?.whatsapp ? digits(settings.whatsapp) : "9779860658312";
   const [form, setForm] = useState<FormState>({ name: "", email: "", message: "" });
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "sent">("idle");
@@ -53,7 +62,15 @@ export default function Contact() {
     const body = encodeURIComponent(
       `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
     );
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+    // Record the lead for the admin inbox; the existing mailto flow below is unchanged.
+    void fetch("/api/inquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: form.name, email: form.email, message: form.message }),
+      keepalive: true,
+    }).catch(() => {});
+
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
     setStatus("sent");
   };
 
@@ -164,7 +181,7 @@ export default function Contact() {
 
           <div className="lg:col-span-2 flex flex-col gap-4">
             <a
-              href={`mailto:${CONTACT_EMAIL}`}
+              href={`mailto:${email}`}
               className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-accent/50 hover:-translate-y-0.5"
             >
               <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent-2 transition-colors group-hover:bg-accent group-hover:text-on-accent">
@@ -172,12 +189,12 @@ export default function Contact() {
               </span>
               <span>
                 <span className="block text-sm text-muted">Email</span>
-                <span className="block font-medium">{CONTACT_EMAIL}</span>
+                <span className="block font-medium">{email}</span>
               </span>
             </a>
 
             <a
-              href="tel:+9779860658312"
+              href={phoneHref}
               className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-accent/50 hover:-translate-y-0.5"
             >
               <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent-2 transition-colors group-hover:bg-accent group-hover:text-on-accent">
@@ -185,12 +202,12 @@ export default function Contact() {
               </span>
               <span>
                 <span className="block text-sm text-muted">Call</span>
-                <span className="block font-medium">9860658312 / 9820409071</span>
+                <span className="block font-medium">{phoneLabel}</span>
               </span>
             </a>
 
             <a
-              href="https://wa.me/9779860658312"
+              href={`https://wa.me/${waNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-accent/50 hover:-translate-y-0.5"
@@ -200,7 +217,7 @@ export default function Contact() {
               </span>
               <span>
                 <span className="block text-sm text-muted">WhatsApp</span>
-                <span className="block font-medium">9860658312</span>
+                <span className="block font-medium">{phones ? phones[0] : "9860658312"}</span>
               </span>
             </a>
           </div>

@@ -1,0 +1,350 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────── Enums ─────────────
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum InquiryStatus {
+  NEW
+  CONTACTED
+  IN_DISCUSSION
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
+  ARCHIVED
+}
+
+// ───────────── Auth ─────────────
+
+model AdminUser {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String
+  passwordHash   String
+  role           AdminRole @default(EDITOR)
+  active         Boolean   @default(true)
+  failedLogins   Int       @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  sessions  AdminSession[]
+  auditLogs AuditLog[]
+  inquiries Inquiry[]      @relation("InquiryAssignee")
+
+  @@index([role])
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  // SHA-256 of the opaque cookie token; the raw token is never stored.
+  tokenHash String    @unique
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+// ───────────── Media ─────────────
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  pathname  String   @unique
+  filename  String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  alt       String   @default("")
+  caption   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clientLogos       Client[]          @relation("ClientLogo")
+  technologyIcons   Technology[]      @relation("TechnologyIcon")
+  serviceImages     Service[]         @relation("ServiceImage")
+  projectThumbnails Project[]         @relation("ProjectThumbnail")
+  projectHeroes     Project[]         @relation("ProjectHero")
+  projectGallery    ProjectImage[]
+  testimonialPhotos Testimonial[]     @relation("TestimonialPhoto")
+  settingsLogos     CompanySettings[] @relation("SettingsLogo")
+  settingsFavicons  CompanySettings[] @relation("SettingsFavicon")
+  seoOgImages       PageSeo[]         @relation("PageSeoOg")
+
+  @@index([createdAt])
+  @@index([mimeType])
+}
+
+// ───────────── Content ─────────────
+
+model ProjectCategory {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  slug         String   @unique
+  description  String   @default("")
+  displayOrder Int      @default(0)
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects Project[]
+
+  @@index([displayOrder])
+}
+
+model Client {
+  id           String   @id @default(cuid())
+  name         String
+  company      String   @default("")
+  slug         String   @unique
+  logoId       String?
+  logo         Media?   @relation("ClientLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  website      String?
+  industry     String   @default("")
+  location     String   @default("")
+  description  String   @default("")
+  featured     Boolean  @default(false)
+  visible      Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects     Project[]
+  testimonials Testimonial[]
+
+  @@index([visible, displayOrder])
+  @@index([name])
+}
+
+model Technology {
+  id           String   @id @default(cuid())
+  name         String   @unique
+  slug         String   @unique
+  iconId       String?
+  icon         Media?   @relation("TechnologyIcon", fields: [iconId], references: [id], onDelete: SetNull)
+  category     String   @default("")
+  website      String?
+  description  String   @default("")
+  displayOrder Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects Project[]
+  services Service[]
+
+  @@index([active, displayOrder])
+}
+
+model Service {
+  id               String        @id @default(cuid())
+  name             String
+  slug             String        @unique
+  shortDescription String        @default("")
+  description      String        @default("")
+  // Name of a Phosphor icon (e.g. "Browsers"); resolved by the public frontend.
+  icon             String        @default("")
+  imageId          String?
+  image            Media?        @relation("ServiceImage", fields: [imageId], references: [id], onDelete: SetNull)
+  features         String[]      @default([])
+  benefits         String[]      @default([])
+  displayOrder     Int           @default(0)
+  featured         Boolean       @default(false)
+  status           ContentStatus @default(DRAFT)
+  seo              Json?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  technologies Technology[]
+  projects     Project[]
+  inquiries    Inquiry[]
+
+  @@index([status, displayOrder])
+}
+
+model Project {
+  id               String          @id @default(cuid())
+  title            String
+  slug             String          @unique
+  shortDescription String          @default("")
+  description      String          @default("")
+  categoryId       String?
+  category         ProjectCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  clientId         String?
+  client           Client?         @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  technologies     Technology[]
+  services         Service[]
+  status           ContentStatus   @default(DRAFT)
+  thumbnailId      String?
+  thumbnail        Media?          @relation("ProjectThumbnail", fields: [thumbnailId], references: [id], onDelete: SetNull)
+  heroImageId      String?
+  heroImage        Media?          @relation("ProjectHero", fields: [heroImageId], references: [id], onDelete: SetNull)
+  gallery          ProjectImage[]
+  features         String[]        @default([])
+  challenges       String          @default("")
+  solutions        String          @default("")
+  results          String          @default("")
+  projectUrl       String?
+  githubUrl        String?
+  startDate        DateTime?
+  completionDate   DateTime?
+  featured         Boolean         @default(false)
+  displayOrder     Int             @default(0)
+  publishedAt      DateTime?
+  seo              Json?
+  testimonials     Testimonial[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([status, displayOrder])
+  @@index([status, featured])
+  @@index([categoryId])
+  @@index([clientId])
+  @@index([createdAt])
+}
+
+model ProjectImage {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  position  Int     @default(0)
+
+  @@unique([projectId, mediaId])
+  @@index([projectId, position])
+}
+
+model Testimonial {
+  id           String        @id @default(cuid())
+  clientName   String
+  company      String        @default("")
+  designation  String        @default("")
+  photoId      String?
+  photo        Media?        @relation("TestimonialPhoto", fields: [photoId], references: [id], onDelete: SetNull)
+  content      String
+  rating       Int?
+  clientId     String?
+  client       Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId    String?
+  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  featured     Boolean       @default(false)
+  displayOrder Int           @default(0)
+  status       ContentStatus @default(DRAFT)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status, displayOrder])
+}
+
+// ───────────── Leads ─────────────
+
+model Inquiry {
+  id            String        @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  company       String?
+  subject       String?
+  message       String
+  serviceId     String?
+  service       Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  projectType   String?
+  budget        String?
+  status        InquiryStatus @default(NEW)
+  read          Boolean       @default(false)
+  assignedToId  String?
+  assignedTo    AdminUser?    @relation("InquiryAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  // Admin-only. Never selected by public endpoints.
+  internalNotes String        @default("")
+  ipAddress     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([read])
+  @@index([assignedToId])
+  @@index([email])
+}
+
+// ───────────── Site configuration ─────────────
+
+// Singleton row (id = "singleton").
+model CompanySettings {
+  id           String   @id @default("singleton")
+  companyName  String   @default("")
+  logoId       String?
+  logo         Media?   @relation("SettingsLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  faviconId    String?
+  favicon      Media?   @relation("SettingsFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
+  tagline      String   @default("")
+  description  String   @default("")
+  email        String   @default("")
+  phones       String[] @default([])
+  whatsapp     String   @default("")
+  address      String   @default("")
+  businessHours String  @default("")
+  socialLinks  Json     @default("{}")
+  copyright    String   @default("")
+  updatedAt    DateTime @updatedAt
+}
+
+model PageSeo {
+  id              String   @id @default(cuid())
+  // Stable page key, e.g. "home".
+  key             String   @unique
+  seoTitle        String   @default("")
+  metaDescription String   @default("")
+  canonicalUrl    String?
+  ogTitle         String   @default("")
+  ogDescription   String   @default("")
+  ogImageId       String?
+  ogImage         Media?   @relation("PageSeoOg", fields: [ogImageId], references: [id], onDelete: SetNull)
+  robots          String   @default("index,follow")
+  updatedAt       DateTime @updatedAt
+}
+
+// ───────────── Audit ─────────────
+
+model AuditLog {
+  id        String     @id @default(cuid())
+  actorId   String?
+  actor     AdminUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorEmail String?
+  action    String
+  entity    String
+  entityId  String?
+  ipAddress String?
+  metadata  Json?
+  createdAt DateTime   @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([entity, entityId])
+  @@index([action])
+}

@@ -3,7 +3,21 @@ import SectionHeading from "./ui/SectionHeading";
 import RevealOnScroll from "./ui/RevealOnScroll";
 import TiltCard from "./TiltCard";
 
-const PROJECTS = [
+const GRADIENTS = [
+  "from-blue-600/40 via-blue-900/30 to-transparent",
+  "from-indigo-600/40 via-blue-900/30 to-transparent",
+  "from-sky-600/40 via-blue-900/30 to-transparent",
+  "from-blue-500/40 via-indigo-900/30 to-transparent",
+];
+
+type ProjectCard = {
+  title: string;
+  tag: string;
+  gradient: string;
+  image?: { url: string; alt: string };
+};
+
+const PROJECTS: ProjectCard[] = [
   {
     title: "FinFlow Dashboard",
     tag: "Web Application",
@@ -26,7 +40,21 @@ const PROJECTS = [
   },
 ];
 
-export default function Portfolio() {
+type PortfolioItem = {
+  title: string;
+  category: { name: string } | null;
+  thumbnail: { url: string; alt: string } | null;
+};
+
+export default function Portfolio({ items }: { items?: PortfolioItem[] }) {
+  const projects: ProjectCard[] = items
+    ? items.map((p, i) => ({
+        title: p.title,
+        tag: p.category?.name ?? "Project",
+        gradient: GRADIENTS[i % GRADIENTS.length],
+        image: p.thumbnail ?? undefined,
+      }))
+    : PROJECTS;
   return (
     <section id="portfolio" className="relative py-28 sm:py-36 bg-background">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
@@ -40,9 +68,18 @@ export default function Portfolio() {
           itemSelector="[data-project]"
           className="mt-16 grid gap-6 sm:grid-cols-2"
         >
-          {PROJECTS.map((project) => (
+          {projects.map((project) => (
             <div key={project.title} data-project>
               <TiltCard className="group relative h-72 rounded-2xl border border-border bg-card overflow-hidden cursor-pointer">
+                {project.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={project.image.url}
+                    alt={project.image.alt}
+                    loading="lazy"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                )}
                 <div
                   className={`absolute inset-0 bg-gradient-to-br ${project.gradient}`}
                   aria-hidden="true"

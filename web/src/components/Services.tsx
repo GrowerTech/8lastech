@@ -6,10 +6,15 @@ import {
   GearSix,
   ChartLineUp,
 } from "@phosphor-icons/react/dist/ssr";
+import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 import SectionHeading from "./ui/SectionHeading";
 import RevealOnScroll from "./ui/RevealOnScroll";
 
-const SERVICES = [
+const ICONS = { Browsers, DeviceMobile, Code, PaintBrush, GearSix, ChartLineUp };
+
+type ServiceItem = { icon: PhosphorIcon; title: string; description: string };
+
+const SERVICES: ServiceItem[] = [
   {
     icon: Browsers,
     title: "Web Applications",
@@ -48,7 +53,16 @@ const SERVICES = [
   },
 ];
 
-export default function Services() {
+type ManagedService = { name: string; icon: string; shortDescription: string; description: string };
+
+export default function Services({ items }: { items?: ManagedService[] }) {
+  const services: ServiceItem[] = items
+    ? items.map((s) => ({
+        icon: ICONS[s.icon as keyof typeof ICONS] ?? Code,
+        title: s.name,
+        description: s.shortDescription || s.description,
+      }))
+    : SERVICES;
   return (
     <section id="services" className="relative py-28 sm:py-36 bg-background">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
@@ -62,7 +76,7 @@ export default function Services() {
           itemSelector="[data-service]"
           className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {SERVICES.map(({ icon: Icon, title, description }) => (
+          {services.map(({ icon: Icon, title, description }) => (
             <div
               key={title}
               data-service

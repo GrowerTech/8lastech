@@ -23,7 +23,16 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function Testimonials() {
+type ManagedTestimonial = { clientName: string; company: string; designation: string; content: string };
+
+export default function Testimonials({ items }: { items?: ManagedTestimonial[] }) {
+  const testimonials = items
+    ? items.map((t) => ({
+        quote: t.content,
+        name: t.clientName,
+        role: [t.designation, t.company].filter(Boolean).join(", "),
+      }))
+    : TESTIMONIALS;
   return (
     <section id="testimonials" className="relative py-28 sm:py-36 bg-background-alt">
       <div className="mx-auto max-w-7xl px-6 sm:px-10">
@@ -33,7 +42,7 @@ export default function Testimonials() {
           itemSelector="[data-quote]"
           className="mt-16 grid gap-6 lg:grid-cols-3"
         >
-          {TESTIMONIALS.map((t) => (
+          {testimonials.map((t) => (
             <div
               key={t.name}
               data-quote
